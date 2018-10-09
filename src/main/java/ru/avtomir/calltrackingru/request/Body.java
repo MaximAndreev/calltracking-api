@@ -134,4 +134,21 @@ public class Body {
             return new Body(this);
         }
     }
+
+    @Override
+    public String toString() {
+        return "Body{" +
+                "auth='" + auth + '\'' +
+                ", project='" + project + '\'' +
+                ", dimensions='" + dimensions + '\'' +
+                ", metrics='" + metrics + '\'' +
+                ", startDate='" + startDate + '\'' +
+                ", endDate='" + endDate + '\'' +
+                ", startIndex='" + startIndex + '\'' +
+                ", maxResults='" + maxResults + '\'' +
+                ", viewType='" + viewType + '\'' +
+                ", scopeUnique='" + scopeUnique + '\'' +
+                ", user='" + user + '\'' +
+                '}';
+    }
 }
