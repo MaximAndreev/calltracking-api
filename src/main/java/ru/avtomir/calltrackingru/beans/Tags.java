@@ -1,7 +1,8 @@
 package ru.avtomir.calltrackingru.beans;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public enum Tags {
     SALE("Продажа"),
@@ -29,12 +30,12 @@ public enum Tags {
         return tagName;
     }
 
-    public List<Tags> getMainTags() {
-        return Arrays.asList(SALE, SERVICE, PARTS, EQUIPMENT, NON_TARGET, OTHERS, SALE_FLEET, USED, INSURANCE, UUU, NOT_ANSWERED50);
+    public static Set<Tags> getMainTags() {
+        return new HashSet<>(Arrays.asList(SALE, SERVICE, PARTS, EQUIPMENT, NON_TARGET, OTHERS, SALE_FLEET, USED, INSURANCE, UUU, NOT_ANSWERED50));
     }
 
-    public List<Tags> additionalTags() {
-        return Arrays.asList(MISSED_CALLS, NOT_SWITCHED_CALLS, BAD_CONNECTION);
+    public static Set<Tags> additionalTags() {
+        return new HashSet<>(Arrays.asList(MISSED_CALLS, NOT_SWITCHED_CALLS, BAD_CONNECTION));
     }
 
     public static Tags fromTagName(String tagName) {
