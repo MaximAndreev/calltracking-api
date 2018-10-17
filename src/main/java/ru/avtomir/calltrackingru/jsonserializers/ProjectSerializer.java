@@ -1,7 +1,7 @@
 package ru.avtomir.calltrackingru.jsonserializers;
 
 import com.google.gson.*;
-import ru.avtomir.calltrackingru.beans.project.Project;
+import ru.avtomir.calltrackingru.beans.Project;
 
 import java.lang.reflect.Type;
 

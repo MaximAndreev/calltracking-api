@@ -1,6 +1,6 @@
 package ru.avtomir.calltrackingru;
 
-import ru.avtomir.calltrackingru.beans.project.Project;
+import ru.avtomir.calltrackingru.beans.Project;
 import ru.avtomir.calltrackingru.credential.Credential;
 
 import java.time.LocalDate;

@@ -1,4 +1,4 @@
-package ru.avtomir.calltrackingru.beans.project;
+package ru.avtomir.calltrackingru.beans;
 
 import java.time.LocalDate;
 import java.util.Objects;

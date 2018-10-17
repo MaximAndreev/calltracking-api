@@ -1,4 +1,4 @@
-package ru.avtomir.calltrackingru.beans.project;
+package ru.avtomir.calltrackingru.beans;
 
 import java.util.List;
 import java.util.Objects;
