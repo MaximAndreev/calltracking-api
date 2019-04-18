@@ -35,6 +35,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 
@@ -44,6 +45,7 @@ public class CalltrackingRuImpl implements CalltrackingRu {
             .create();
     private static final CloseableHttpClient CLOSEABLE_HTTP_CLIENT = HttpClients.createDefault();
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final Lock UPDATE_CREDENTIALS_LOCK = new ReentrantLock();
     private static final URI dataUri;
 
     static {
@@ -59,7 +61,7 @@ public class CalltrackingRuImpl implements CalltrackingRu {
         }
     }
 
-    private Logger logger = LoggerFactory.getLogger(CalltrackingRuImpl.class);
+    private Logger log = LoggerFactory.getLogger(CalltrackingRuImpl.class);
     private final Credential credential;
 
     public CalltrackingRuImpl(Credential credential) {
@@ -67,15 +69,12 @@ public class CalltrackingRuImpl implements CalltrackingRu {
     }
 
     @Override
-    public List<Project> getAllProjects(final LocalDate startDate,
-                                        final LocalDate endDate) {
-        logger.info("Get all projects for account: {}", credential.getLogin());
+    public List<Project> getAllProjects() throws RequestCalltrackingRuException {
+        log.debug("Get all projects for account: {}", credential.getLogin());
         Supplier<Body> bodySupplier = () ->
                 new Body.Builder(credential.getToken(), "0")
                         .setDimensions("ct:project_id, ct:project_name")
                         .setMetrics("ct:phones_count")
-                        .setStartDate(startDate.format(FORMATTER))
-                        .setEndDate(endDate.format(FORMATTER))
                         .setMaxResults("10000")
                         .setStartIndex("0")
                         .setViewType("list")
@@ -89,8 +88,8 @@ public class CalltrackingRuImpl implements CalltrackingRu {
     public Project getProject(final String id,
                               final LocalDate startDate,
                               final LocalDate endDate,
-                              final boolean isUnique) {
-        logger.info("get calls for id: {}", id);
+                              final boolean isUnique) throws RequestCalltrackingRuException {
+        log.debug("get calls for id: {}", id);
         Supplier<Body> bodySupplier = () -> {
             Body.Builder builder = new Body.Builder(credential.getToken(), id)
                     .setDimensions("ct:date, ct:call_source, ct:virtual_number")
@@ -123,29 +122,34 @@ public class CalltrackingRuImpl implements CalltrackingRu {
     }
 
     private void updateCredentials() {
-        logger.info("update credentials for account: {}", credential.getLogin());
-        if (!credential.isValid()) {
-            URI loginUri;
-            try {
-                loginUri = new URIBuilder()
-                        .setScheme("https")
-                        .setHost("calltracking.ru")
-                        .setPath("/api/login.php")
-                        .setParameter("account_type", "calltracking")
-                        .setParameter("login", credential.getLogin())
-                        .setParameter("password", credential.getPassword())
-                        .setParameter("service", "analytics")
-                        .build();
-            } catch (URISyntaxException e) {
-                // Unreachable statement
-                logger.error("reach unreachable statement");
-                throw new RuntimeException("Unreachable exception", e);
+        log.info("update credentials for account: {}", credential.getLogin());
+        UPDATE_CREDENTIALS_LOCK.lock();
+        try {
+            if (!credential.isValid()) {
+                URI loginUri;
+                try {
+                    loginUri = new URIBuilder()
+                            .setScheme("https")
+                            .setHost("calltracking.ru")
+                            .setPath("/api/login.php")
+                            .setParameter("account_type", "calltracking")
+                            .setParameter("login", credential.getLogin())
+                            .setParameter("password", credential.getPassword())
+                            .setParameter("service", "analytics")
+                            .build();
+                } catch (URISyntaxException e) {
+                    // Unreachable statement
+                    log.error("reach unreachable statement");
+                    throw new RuntimeException("Unreachable exception", e);
+                }
+                JsonElement tokenJson = getRequest(loginUri);
+                credential.setToken(tokenJson.getAsString());
+                Credentials.save(credential);
+                credential.setValid(true);
+                log.debug("get new token: {}", credential.getToken());
             }
-            JsonElement tokenJson = getRequest(loginUri);
-            credential.setToken(tokenJson.getAsString());
-            Credentials.save(credential);
-            credential.setValid(true);
-            logger.debug("get new token: {}", credential.getToken());
+        } finally {
+            UPDATE_CREDENTIALS_LOCK.unlock();
         }
     }
 
@@ -197,15 +201,15 @@ public class CalltrackingRuImpl implements CalltrackingRu {
                 return execute(httpPost);
             } catch (IOException ignored) {
                 if (attempt > maxAttempts) {
-                    logger.warn("post-request error, uri: {}, body {}", uri, body);
+                    log.warn("post-request error, uri: {}, body {}", uri, body);
                     throw new RequestCalltrackingRuException("POST-request error", uri, httpPost, ignored);
                 }
-                logger.info("invalid token: {}", credential.getToken());
+                log.info("invalid token: {}", credential.getToken());
                 credential.setValid(false);
                 Lock lock = credential.getCredentialStorage().getLock().writeLock();
                 lock.lock();
                 try {
-                    logger.info("update token for account: {}", credential.getLogin());
+                    log.info("update token for account: {}", credential.getLogin());
                     updateCredentials();
                 } finally {
                     lock.unlock();
@@ -219,7 +223,7 @@ public class CalltrackingRuImpl implements CalltrackingRu {
 
     private JsonElement getRequest(final URI uri) {
         try {
-            logger.info("send new request for token");
+            log.info("send new request for token");
             return execute(new HttpGet(uri));
         } catch (IOException | JsonSyntaxException | JsonIOException e) {
             throw new RequestCalltrackingRuException("GET-request error", uri, e);
@@ -230,23 +234,23 @@ public class CalltrackingRuImpl implements CalltrackingRu {
         try (CloseableHttpResponse response = CLOSEABLE_HTTP_CLIENT.execute(httpRequest)) {
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200) {
-                logger.warn("server response isn't 200OK: {}", statusCode);
+                log.warn("server response isn't 200OK: {}", statusCode);
                 throw new IOException("Status isn't 200OK");
             }
             HttpEntity entity = response.getEntity();
             if (entity == null) {
-                logger.warn("empty server response");
+                log.warn("empty server response");
                 throw new IOException("Server response doesn't contain body");
             }
             try (InputStreamReader isr = new InputStreamReader(entity.getContent(), StandardCharsets.UTF_8)) {
-                logger.info("parse response");
+                log.debug("parse response");
                 JsonObject jsonObject = GSON.fromJson(isr, JsonObject.class);
                 JsonElement status = jsonObject.get("status");
                 JsonElement data = jsonObject.get("data");
                 if ((status != null) && "ok".equals(status.getAsString()) && (data != null)) {
                     return data;
                 }
-                logger.warn("api responded with error");
+                log.warn("api responded with error");
                 throw new IOException("Server responded with error");
             }
         }

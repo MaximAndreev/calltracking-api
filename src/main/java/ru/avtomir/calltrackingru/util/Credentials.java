@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avtomir.calltrackingru.credential.Credential;
 import ru.avtomir.calltrackingru.credential.CredentialStorage;
-import ru.avtomir.calltrackingru.exceptions.PathErrorCalltrackingRuException;
+import ru.avtomir.calltrackingru.exceptions.FileCredentialsCalltrackingRuException;
 import ru.avtomir.calltrackingru.jsonserializers.CredentialSerializer;
 
 import java.io.IOException;
@@ -29,15 +29,16 @@ public class Credentials {
     }
 
     /**
-     * Thread-safe load of {@link Credential}
+     * Load of {@link Credential}.
      *
-     * @param path - path to file with credentials from user.dir
+     * @param path - path to file.
+     * @throws FileCredentialsCalltrackingRuException if file not found or can't be read as specified JSON format.
      */
-    public static Credential load(Path path) {
+    public static Credential load(Path path) throws FileCredentialsCalltrackingRuException {
         logger.info("load credentials from file: {}", path);
         if (!Files.exists(path)) {
             logger.warn("file {} doesn't exist", path);
-            throw new PathErrorCalltrackingRuException("File " + path.getFileName() + " doesn't exist", path);
+            throw new FileCredentialsCalltrackingRuException("File " + path.getFileName() + " doesn't exist", path);
         }
         try {
             Credential credential;
@@ -49,17 +50,20 @@ public class Credentials {
             return credential;
         } catch (JsonIOException | JsonSyntaxException e) {
             logger.warn("invalid json in file: {}", path);
-            throw new PathErrorCalltrackingRuException("Invalid json in file: " + path, path, e);
+            throw new FileCredentialsCalltrackingRuException("Invalid json in file: " + path, path, e);
         } catch (IOException e) {
             logger.warn("can't read file: {}", path);
-            throw new PathErrorCalltrackingRuException("Can't read file: " + path, path, e);
+            throw new FileCredentialsCalltrackingRuException("Can't read file: " + path, path, e);
         }
     }
 
     /**
-     * Thread-safe save of {@link Credential}
+     * Thread-safe save of {@link Credential}.
+     *
+     * @param credential with should be saved to file.
+     * @throws FileCredentialsCalltrackingRuException if credentials can't be saved to file.
      */
-    public static void save(Credential credential) {
+    public static void save(Credential credential) throws FileCredentialsCalltrackingRuException {
         CredentialStorage credentialStorage = credential.getCredentialStorage();
         Path path = credentialStorage.getPath();
         Lock lock = credentialStorage.getLock().writeLock();
@@ -70,7 +74,7 @@ public class Credentials {
             Files.write(path, json.getBytes());
         } catch (IOException e) {
             logger.warn("can't write to file: {}", path);
-            throw new RuntimeException("Can't write to file: " + path.toString(), e);
+            throw new FileCredentialsCalltrackingRuException("Can't write to file cause " + e.getMessage(), path);
         } finally {
             lock.unlock();
         }

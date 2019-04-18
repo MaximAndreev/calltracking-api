@@ -4,7 +4,8 @@ import org.apache.http.client.methods.HttpPost;
 
 import java.net.URI;
 
-public class RequestCalltrackingRuException extends BaseCallrackingRuException {
+// Error in Calltracking.ru API
+public class RequestCalltrackingRuException extends CallrackingRuException {
     private final URI uri;
     private final HttpPost httpPost;
 

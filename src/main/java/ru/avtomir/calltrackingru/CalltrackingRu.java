@@ -2,6 +2,7 @@ package ru.avtomir.calltrackingru;
 
 import ru.avtomir.calltrackingru.beans.Project;
 import ru.avtomir.calltrackingru.credential.Credential;
+import ru.avtomir.calltrackingru.exceptions.RequestCalltrackingRuException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -11,13 +12,21 @@ public interface CalltrackingRu {
     /**
      * List of all {@link Project} available for account (defined by {@link Credential})
      * {@link Project} returned without {@link Project#calls}.
+     *
+     * @return projects without call data.
+     * @throws RequestCalltrackingRuException if API returns an error in all 3 attempts.
      */
-    List<Project> getAllProjects(LocalDate startDate, LocalDate endDate);
+    List<Project> getAllProjects() throws RequestCalltrackingRuException;
 
     /**
      * Get {@link Project} with filled {@link Project#calls} for date range.
      *
-     * @param isUnique - filtration of calls by "Unique by tag"({@code true}) and "Without filtration"({@code false}).
+     * @param id        id of project in Calltracking.ru
+     * @param startDate start date.
+     * @param endDate   end date.
+     * @param isUnique  - filtration of calls by "Unique by tag"({@code true}) and "Without filtration"({@code false}).
+     * @return project with call data.
+     * @throws RequestCalltrackingRuException if API returns an error in all 3 attempts.
      */
-    Project getProject(String id, LocalDate startDate, LocalDate endDate, boolean isUnique);
+    Project getProject(String id, LocalDate startDate, LocalDate endDate, boolean isUnique) throws RequestCalltrackingRuException;
 }
