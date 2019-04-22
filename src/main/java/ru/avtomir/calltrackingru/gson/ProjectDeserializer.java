@@ -1,11 +1,11 @@
-package ru.avtomir.calltrackingru.jsonserializers;
+package ru.avtomir.calltrackingru.gson;
 
 import com.google.gson.*;
 import ru.avtomir.calltrackingru.beans.Project;
 
 import java.lang.reflect.Type;
 
-public class ProjectSerializer implements JsonDeserializer<Project> {
+public class ProjectDeserializer implements JsonDeserializer<Project> {
 
     @Override
     public Project deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {

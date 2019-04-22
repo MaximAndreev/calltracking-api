@@ -7,12 +7,14 @@ public class Credential {
     private final String password;
     private volatile String token;
     private volatile boolean isValid = true;
-    private CredentialStorage credentialStorage;
+    private CredentialsStorage credentialsStorage;
 
-    private Credential(String login, String password, String token) {
-        this.login = login;
-        this.password = password;
-        this.token = token;
+    public Credential(CredentialsStorage credentialsStorage) {
+        Objects.requireNonNull(credentialsStorage, "credentialsStorage must not be null");
+        this.login = credentialsStorage.getLogin();
+        this.password = credentialsStorage.getPassword();
+        this.token = credentialsStorage.getToken();
+        this.credentialsStorage = credentialsStorage;
     }
 
     public String getLogin() {
@@ -27,24 +29,18 @@ public class Credential {
         return token;
     }
 
-    public synchronized void setToken(String token) {
-        this.token = token;
-    }
-
-    public CredentialStorage getCredentialStorage() {
-        return credentialStorage;
-    }
-
-    public void setCredentialStorage(CredentialStorage credentialStorage) {
-        this.credentialStorage = credentialStorage;
-    }
-
     public boolean isValid() {
         return isValid;
     }
 
-    public void setValid(boolean valid) {
-        isValid = valid;
+    public void setValid(boolean isValid) {
+        this.isValid = isValid;
+    }
+
+    public void updateToken(String token) {
+        this.token = token;
+        this.isValid = true;
+        credentialsStorage.saveToken(token);
     }
 
     @Override

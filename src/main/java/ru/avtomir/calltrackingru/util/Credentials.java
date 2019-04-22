@@ -1,35 +1,30 @@
 package ru.avtomir.calltrackingru.util;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avtomir.calltrackingru.credential.Credential;
-import ru.avtomir.calltrackingru.credential.CredentialStorage;
+import ru.avtomir.calltrackingru.credential.CredentialsStorageFile;
+import ru.avtomir.calltrackingru.credential.CredentialsStorageMemory;
 import ru.avtomir.calltrackingru.exceptions.FileCredentialsCalltrackingRuException;
-import ru.avtomir.calltrackingru.jsonserializers.CredentialSerializer;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.locks.Lock;
+import java.util.Objects;
 
 
-public class Credentials {
-    private static final Gson GSON = new GsonBuilder()
-            .registerTypeAdapter(Credential.class, new CredentialSerializer())
-            .create();
+public final class Credentials {
+
     private static Logger logger = LoggerFactory.getLogger(Credentials.class);
 
     private Credentials() {
     }
 
     /**
-     * Load of {@link Credential}.
+     * Load of {@link Credential} with a file based storage.
      *
      * @param path - path to file.
      * @throws FileCredentialsCalltrackingRuException if file not found or can't be read as specified JSON format.
@@ -41,13 +36,15 @@ public class Credentials {
             throw new FileCredentialsCalltrackingRuException("File " + path.getFileName() + " doesn't exist", path);
         }
         try {
-            Credential credential;
+            CredentialsStorageFile credentialsStorageFile = new CredentialsStorageFile();
             try (InputStreamReader isr = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8)) {
-                credential = GSON.fromJson(isr, Credential.class);
-                credential.setCredentialStorage(new CredentialStorage(path));
-                credential.setValid(true);
+                JsonObject jsonObject = new JsonParser().parse(isr).getAsJsonObject();
+                credentialsStorageFile.setPath(path);
+                credentialsStorageFile.setLogin(jsonElementToString(jsonObject.get("login")));
+                credentialsStorageFile.setPassword(jsonElementToString(jsonObject.get("password")));
+                credentialsStorageFile.setToken(jsonElementToString(jsonObject.get("token")));
             }
-            return credential;
+            return new Credential(credentialsStorageFile);
         } catch (JsonIOException | JsonSyntaxException e) {
             logger.warn("invalid json in file: {}", path);
             throw new FileCredentialsCalltrackingRuException("Invalid json in file: " + path, path, e);
@@ -57,26 +54,23 @@ public class Credentials {
         }
     }
 
+    private static String jsonElementToString(JsonElement jsonElement) {
+        return jsonElement == null ? null : jsonElement.getAsString();
+    }
+
     /**
-     * Thread-safe save of {@link Credential}.
+     * Load of {@link Credential} with in-memory storage.
      *
-     * @param credential with should be saved to file.
-     * @throws FileCredentialsCalltrackingRuException if credentials can't be saved to file.
+     * @param login    - login to API (never {@code null}).
+     * @param password - password to API (never {@code null}).
+     * @param token    - token to API.
      */
-    public static void save(Credential credential) throws FileCredentialsCalltrackingRuException {
-        CredentialStorage credentialStorage = credential.getCredentialStorage();
-        Path path = credentialStorage.getPath();
-        Lock lock = credentialStorage.getLock().writeLock();
-        String json = GSON.toJson(credential);
-        lock.lock();
-        logger.info("save credentials to file: {}", path);
-        try {
-            Files.write(path, json.getBytes());
-        } catch (IOException e) {
-            logger.warn("can't write to file: {}", path);
-            throw new FileCredentialsCalltrackingRuException("Can't write to file cause " + e.getMessage(), path);
-        } finally {
-            lock.unlock();
-        }
+    public static Credential load(String login, String password, String token) {
+        logger.info("load credentials with in-memory storage");
+        CredentialsStorageMemory credentialsStorage = new CredentialsStorageMemory();
+        credentialsStorage.setLogin(Objects.requireNonNull(login, "login must not be null"));
+        credentialsStorage.setPassword(Objects.requireNonNull(password, "password must not be null"));
+        credentialsStorage.setToken(token);
+        return new Credential(credentialsStorage);
     }
 }

@@ -10,7 +10,7 @@
 
     <groupId>ru.avtomir</groupId>
     <artifactId>calltracking-api</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
     <build>
         <plugins>
             <plugin>

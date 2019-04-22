@@ -18,9 +18,7 @@ import ru.avtomir.calltrackingru.beans.Project;
 import ru.avtomir.calltrackingru.beans.Tags;
 import ru.avtomir.calltrackingru.credential.Credential;
 import ru.avtomir.calltrackingru.exceptions.RequestCalltrackingRuException;
-import ru.avtomir.calltrackingru.jsonserializers.ProjectSerializer;
 import ru.avtomir.calltrackingru.request.Body;
-import ru.avtomir.calltrackingru.util.Credentials;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -38,11 +36,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
+import static ru.avtomir.calltrackingru.gson.GsonHolder.GSON;
+
 
 public class CalltrackingRuImpl implements CalltrackingRu {
-    private static final Gson GSON = new GsonBuilder()
-            .registerTypeAdapter(Project.class, new ProjectSerializer())
-            .create();
+    private static Logger log = LoggerFactory.getLogger(CalltrackingRuImpl.class);
     private static final CloseableHttpClient CLOSEABLE_HTTP_CLIENT = HttpClients.createDefault();
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final Lock UPDATE_CREDENTIALS_LOCK = new ReentrantLock();
@@ -61,7 +59,6 @@ public class CalltrackingRuImpl implements CalltrackingRu {
         }
     }
 
-    private Logger log = LoggerFactory.getLogger(CalltrackingRuImpl.class);
     private final Credential credential;
 
     public CalltrackingRuImpl(Credential credential) {
@@ -143,9 +140,7 @@ public class CalltrackingRuImpl implements CalltrackingRu {
                     throw new RuntimeException("Unreachable exception", e);
                 }
                 JsonElement tokenJson = getRequest(loginUri);
-                credential.setToken(tokenJson.getAsString());
-                Credentials.save(credential);
-                credential.setValid(true);
+                credential.updateToken(tokenJson.getAsString());
                 log.debug("get new token: {}", credential.getToken());
             }
         } finally {
@@ -206,14 +201,8 @@ public class CalltrackingRuImpl implements CalltrackingRu {
                 }
                 log.info("invalid token: {}", credential.getToken());
                 credential.setValid(false);
-                Lock lock = credential.getCredentialStorage().getLock().writeLock();
-                lock.lock();
-                try {
-                    log.info("update token for account: {}", credential.getLogin());
-                    updateCredentials();
-                } finally {
-                    lock.unlock();
-                }
+                log.info("update token for account: {}", credential.getLogin());
+                updateCredentials();
                 attempt++;
             } catch (JsonSyntaxException | JsonIOException e) {
                 throw new RequestCalltrackingRuException("POST-request error", uri, httpPost, e);
