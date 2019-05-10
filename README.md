@@ -5,17 +5,20 @@
 * `ru.avtomir.calltrackingru.credential.Credential` - учетная запись для доступа в API.
 
 ##### Пример использвания:
-1. Создаем `Credential` с помощью утильного класса `ru.avtomir.calltrackingru.util.Credentials`
+1. Создаем `Credential` с помощью утильного класса `ru.avtomir.calltrackingru.util.Credentials`.  
+ Есть 2 варианта:
 
-    Для создания требуется указать путь к JSON-файлу формата:
-    ````json
-    {
-      "login": "login",
-      "password": "password",
-      "token": "token (can be empty)"
-    }
-    ````
-    При необходимости бибилиотека обновит `token` и сохранит его в указанный файл (!необходимы права на запись).
+   * Для создания требуется указать путь к JSON-файлу формата:
+        ````json
+        {
+          "login": "login",
+          "password": "password",
+          "token": "token (can be empty)"
+        }
+        ````
+     При необходимости бибилиотека обновит `token` и сохранит его в указанный файл (!необходимы права на запись).
+    
+    * Передать значения `login` и `password` для создания in-memory версии.
     
 2. Передаем `Credential` в конретную имплементацию `ru.avtomir.calltrackingru.CalltrackingRuImpl`
 
