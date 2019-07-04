@@ -49,4 +49,5 @@ jobs:
 workflows:
   version: 2
   main:
-    jobs: build
+    jobs:
+      - build
