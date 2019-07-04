@@ -38,10 +38,8 @@ import java.util.function.Supplier;
 
 import static ru.avtomir.calltrackingru.gson.GsonHolder.GSON;
 
-
 public class CalltrackingRuImpl implements CalltrackingRu {
     private static Logger log = LoggerFactory.getLogger(CalltrackingRuImpl.class);
-    private static final CloseableHttpClient CLOSEABLE_HTTP_CLIENT = HttpClients.createDefault();
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final Lock UPDATE_CREDENTIALS_LOCK = new ReentrantLock();
     private static final URI dataUri;
@@ -59,10 +57,25 @@ public class CalltrackingRuImpl implements CalltrackingRu {
         }
     }
 
+    private final CloseableHttpClient httpClient;
     private final Credential credential;
 
+    /**
+     * Create an instance with default {@link CloseableHttpClient} to perform HTTP requests to API.
+     *
+     * @param credential storage of credentials to API.
+     */
     public CalltrackingRuImpl(Credential credential) {
+        this(credential, HttpClients.createDefault());
+    }
+
+    /**
+     * @param credential storage of credentials to API.
+     * @param httpClient a client used to perform HTTP requests to API.
+     */
+    public CalltrackingRuImpl(Credential credential, CloseableHttpClient httpClient) {
         this.credential = credential;
+        this.httpClient = httpClient;
     }
 
     @Override
@@ -195,7 +208,7 @@ public class CalltrackingRuImpl implements CalltrackingRu {
             try {
                 return execute(httpPost);
             } catch (IOException ignored) {
-                if (attempt > maxAttempts) {
+                if (attempt >= maxAttempts) {
                     log.warn("post-request error, uri: {}, body {}", uri, body);
                     throw new RequestCalltrackingRuException("POST-request error", uri, httpPost, ignored);
                 }
@@ -220,7 +233,7 @@ public class CalltrackingRuImpl implements CalltrackingRu {
     }
 
     private JsonElement execute(HttpUriRequest httpRequest) throws IOException {
-        try (CloseableHttpResponse response = CLOSEABLE_HTTP_CLIENT.execute(httpRequest)) {
+        try (CloseableHttpResponse response = httpClient.execute(httpRequest)) {
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200) {
                 log.warn("server response isn't 200OK: {}", statusCode);

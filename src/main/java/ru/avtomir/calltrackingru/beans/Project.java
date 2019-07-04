@@ -8,6 +8,14 @@ public class Project {
     protected String name;
     protected List<Call> calls;
 
+    public Project() {
+    }
+
+    public Project(int id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
     public int getId() {
         return id;
     }
