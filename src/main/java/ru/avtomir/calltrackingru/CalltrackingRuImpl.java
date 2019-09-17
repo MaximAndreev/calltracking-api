@@ -109,7 +109,8 @@ public class CalltrackingRuImpl implements CalltrackingRu {
                     .setStartIndex("0")
                     .setMaxResults("10000")
                     .setViewType("list")
-                    .setUser("Maxim");
+                    .setUser("Maxim")
+                    .setScopeUnique("0");
             if (isUnique) {
                 builder.setScopeUnique("1");
             }
