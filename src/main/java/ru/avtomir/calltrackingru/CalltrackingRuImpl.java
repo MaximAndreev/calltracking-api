@@ -102,15 +102,14 @@ public class CalltrackingRuImpl implements CalltrackingRu {
         log.debug("get calls for id: {}", id);
         Supplier<Body> bodySupplier = () -> {
             Body.Builder builder = new Body.Builder(credential.getToken(), id)
-                    .setDimensions("ct:date, ct:call_source, ct:virtual_number")
+                    .setDimensions("ct:call_id, ct:date, ct:call_source, ct:virtual_number")
                     .setMetrics("ct:calls, ct:tagname")
                     .setStartDate(startDate.format(FORMATTER))
                     .setEndDate(endDate.format(FORMATTER))
                     .setStartIndex("0")
                     .setMaxResults("10000")
                     .setViewType("list")
-                    .setUser("Maxim")
-                    .setScopeUnique("0");
+                    .setUser("Maxim");
             if (isUnique) {
                 builder.setScopeUnique("1");
             }
