@@ -7,10 +7,13 @@ import java.util.Set;
 public class Call {
     public static final LocalDate NOT_PARSED = LocalDate.of(3000, 1, 1);
 
-    protected final LocalDate localDate;
-    protected final Set<Tags> tags;
-    protected final String callSource;
-    protected final String virtualNumber;
+    protected LocalDate localDate;
+    protected Set<Tags> tags;
+    protected String callSource;
+    protected String virtualNumber;
+
+    public Call() {
+    }
 
     public Call(LocalDate localDate, Set<Tags> tags, String callSource, String virtualNumber) {
         this.localDate = localDate;
