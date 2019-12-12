@@ -97,8 +97,7 @@ public class CalltrackingRuImpl implements CalltrackingRu {
     @Override
     public Project getProject(final String id,
                               final LocalDate startDate,
-                              final LocalDate endDate,
-                              final boolean isUnique) throws RequestCalltrackingRuException {
+                              final LocalDate endDate) throws RequestCalltrackingRuException {
         log.debug("get calls for id: {}", id);
         Supplier<Body> bodySupplier = () -> {
             Body.Builder builder = new Body.Builder(credential.getToken(), id)
@@ -109,10 +108,8 @@ public class CalltrackingRuImpl implements CalltrackingRu {
                     .setStartIndex("0")
                     .setMaxResults("10000")
                     .setViewType("list")
+                    .setScopeUnique("")
                     .setUser("Maxim");
-            if (isUnique) {
-                builder.setScopeUnique("1");
-            }
             return builder.build();
         };
         JsonElement jsonElement = postRequest(dataUri, bodySupplier);

@@ -24,9 +24,8 @@ public interface CalltrackingRu {
      * @param id        id of project in Calltracking.ru
      * @param startDate start date.
      * @param endDate   end date.
-     * @param isUnique  - filtration of calls by "Unique by tag"({@code true}) and "Without filtration"({@code false}).
      * @return project with call data.
      * @throws RequestCalltrackingRuException if API returns an error in all 3 attempts.
      */
-    Project getProject(String id, LocalDate startDate, LocalDate endDate, boolean isUnique) throws RequestCalltrackingRuException;
+    Project getProject(String id, LocalDate startDate, LocalDate endDate) throws RequestCalltrackingRuException;
 }

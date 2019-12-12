@@ -202,8 +202,7 @@ class CalltrackingRuImplTest {
         Project actual = calltrackingRu.getProject(
                 String.valueOf(MockData.PROJECT_1.getId()),
                 LocalDate.now(),
-                LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()),
-                true);
+                LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()));
 
         // then
         verify(credential).getToken();
